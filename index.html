@@ -1,0 +1,1598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meal Planner & Smart Shopping</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import "https://cdn.jsdelivr.net/npm/tailwindcss@4.0.0/index.css";
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 font-sans antialiased min-h-screen flex flex-col">
+
+    <!-- Top Navigation / Header -->
+    <header class="bg-emerald-600 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <button id="back-btn" onclick="goBack()" class="hidden bg-emerald-700 hover:bg-emerald-800 p-2 rounded-lg text-sm font-medium transition flex items-center space-x-1" title="Back">
+                    ← <span id="txt-back" data-i18n="txtBack">Back</span>
+                </button>
+                <button id="home-btn" onclick="goHome()" class="hidden bg-emerald-700 hover:bg-emerald-800 p-2 rounded-lg text-sm font-medium transition flex items-center space-x-1" title="Home">
+                    🏠 <span id="txt-home" data-i18n="txtHome">Home</span>
+                </button>
+                <h1 id="app-title" class="text-xl font-bold tracking-wide" data-i18n="appTitle">Meal Planner & Shopping</h1>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+                <!-- Profile -->
+                <div class="relative">
+                    <select id="profile-selector" onchange="switchProfile(this.value)" class="bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-medium focus:outline-none cursor-pointer">
+                    </select>
+                </div>
+                <!-- Add Profile -->
+                <button onclick="openProfileModal()" class="bg-emerald-700 hover:bg-emerald-800 p-1.5 rounded-lg text-xs font-medium transition" title="Manage Profiles">👤+</button>
+
+                <!-- Export / Import / Languages -->
+                <div class="flex space-x-1 border-l border-emerald-500 pl-2">
+                    <!-- Export -->
+                    <button onclick="exportData()" class="bg-emerald-700 hover:bg-emerald-800 p-1.5 rounded-lg text-xs font-medium transition" title="Export Data">💾</button>
+                    <!-- Import -->
+                    <label class="bg-emerald-700 hover:bg-emerald-800 p-1.5 rounded-lg text-xs font-medium transition cursor-pointer" title="Import Data">
+                        📂 <input type="file" id="import-file" onchange="importData(event)" class="hidden" accept=".json">
+                    </label>
+                    <!-- Languages -->
+                    <div class="relative pl-1">
+                        <select id="lang-selector" onchange="changeLanguage(this.value)" class="bg-emerald-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-medium focus:outline-none cursor-pointer">
+                            <option value="en">English</option>
+                            <option value="de">Deutsch</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-4xl mx-auto px-4 py-6 flex-grow w-full">
+
+        <!-- VIEW: HOME DASHBOARD -->
+        <div id="view-home" class="space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 text-center">
+                <h2 id="home-welcome" class="text-2xl font-bold text-gray-800 mb-2" data-i18n="homeWelcome">Welcome to Your Kitchen</h2>
+                <p id="home-subtitle" class="text-gray-600 text-sm" data-i18n="homeSubtitle">Select a section below to manage your meals, shopping lists, or pantry matching.</p>
+            </div>
+
+            <div class="flex flex-col space-y-4 max-w-xl mx-auto w-full">
+                <button onclick="switchView('meal-planner')" class="p-5 bg-white rounded-2xl shadow-sm border border-gray-100 hover:border-emerald-500 hover:shadow-md transition text-left flex items-center space-x-4 group">
+                    <div class="bg-emerald-100 text-emerald-600 p-3 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition text-2xl">📅</div>
+                    <div>
+                        <h3 class="font-bold text-lg text-gray-800" data-i18n="navPlanner">Meal Planner</h3>
+                        <p class="text-xs text-gray-500 mt-0.5" data-i18n="navPlannerSub">Monthly calendar schedule & stats</p>
+                    </div>
+                </button>
+
+                <button onclick="switchView('shopping-lists')" class="p-5 bg-white rounded-2xl shadow-sm border border-gray-100 hover:border-blue-500 hover:shadow-md transition text-left flex items-center space-x-4 group">
+                    <div class="bg-blue-100 text-blue-600 p-3 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition text-2xl">🛒</div>
+                    <div>
+                        <h3 class="font-bold text-lg text-gray-800" data-i18n="navShoppingLists">Shopping Lists</h3>
+                        <p class="text-xs text-gray-500 mt-0.5" data-i18n="navShoppingListsSub">Smart Lists & Quick List</p>
+                    </div>
+                </button>
+
+                <button onclick="switchView('what-can-i-cook')" class="p-5 bg-white rounded-2xl shadow-sm border border-gray-100 hover:border-amber-500 hover:shadow-md transition text-left flex items-center space-x-4 group">
+                    <div class="bg-amber-100 text-amber-600 p-3 rounded-xl group-hover:bg-amber-600 group-hover:text-white transition text-2xl">🍳</div>
+                    <div>
+                        <h3 class="font-bold text-lg text-gray-800" data-i18n="navWhatToCook">What Can I Cook</h3>
+                        <p class="text-xs text-gray-500 mt-0.5" data-i18n="navWhatToCookSub">Pantry ingredient matcher</p>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <!-- VIEW: MEAL PLANNER -->
+        <div id="view-meal-planner" class="hidden space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                <div class="flex items-center space-x-3">
+                    <h2 id="calendar-month-year" class="text-xl font-bold text-gray-800">September 2026</h2>
+                    <div class="flex space-x-1">
+                        <button onclick="changeMonth(-1)" class="p-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-bold">◀</button>
+                        <button onclick="changeMonth(1)" class="p-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-bold">▶</button>
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-2 items-center">
+                    <button onclick="generateSmartListFromCheckboxes()" class="bg-blue-600 text-white hover:bg-blue-700 px-3 py-2 rounded-xl text-sm font-medium transition flex items-center space-x-1">
+                        <span>🛒</span> <span data-i18n="btnGenerateList">Generate Smart List</span>
+                    </button>
+                    <button onclick="openStatisticsModal()" class="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-3 py-2 rounded-xl text-sm font-medium transition flex items-center space-x-1">
+                        <span>📊</span> <span data-i18n="btnStats">Statistics</span>
+                    </button>
+                    <button onclick="switchView('master-catalog')" class="bg-emerald-600 text-white hover:bg-emerald-700 px-3 py-2 rounded-xl text-sm font-medium transition flex items-center space-x-1">
+                        <span>📖</span> <span data-i18n="btnMasterCatalog">Master Meal Catalog</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+                <div class="grid grid-cols-7 gap-2 text-center font-bold text-xs text-gray-500 pb-2 border-b border-gray-100">
+                    <div data-i18n="dayMon">Mon</div><div data-i18n="dayTue">Tue</div><div data-i18n="dayWed">Wed</div><div data-i18n="dayThu">Thu</div><div data-i18n="dayFri">Fri</div><div data-i18n="daySat">Sat</div><div data-i18n="daySun">Sun</div>
+                </div>
+                <div id="monthly-calendar-grid" class="grid grid-cols-7 gap-2"></div>
+            </div>
+        </div>
+
+        <!-- VIEW: MASTER MEAL CATALOG -->
+        <div id="view-master-catalog" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-gray-800" data-i18n="masterCatalogTitle">Master Meal Catalog</h2>
+                    <button onclick="openAddMealModal()" class="bg-emerald-600 text-white hover:bg-emerald-700 px-3 py-2 rounded-xl text-sm font-medium transition">
+                        + <span data-i18n="btnAddMeal">Add Meal</span>
+                    </button>
+                </div>
+                
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <input type="text" id="catalog-search" oninput="filterMasterCatalog()" placeholder="Search meals or filter by ingredient..." data-i18n-ph="searchPlaceholder" class="flex-grow px-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    <div id="quick-filter-tags" class="flex flex-wrap gap-1 items-center"></div>
+                </div>
+
+                <div id="master-meal-list" class="space-y-2 pt-2"></div>
+            </div>
+        </div>
+
+        <!-- VIEW: SHOPPING LISTS -->
+        <div id="view-shopping-lists" class="hidden space-y-6">
+            <div class="flex flex-col space-y-2 max-w-md mx-auto w-full">
+                <button onclick="switchShoppingSubTab('smart')" id="subtab-smart-btn" class="w-full py-3 px-4 rounded-xl text-sm font-bold bg-blue-600 text-white transition text-left flex items-center justify-between shadow-sm">
+                    <span data-i18n="subTabSmart">Smart Lists</span>
+                    <span>🛒</span>
+                </button>
+                <button onclick="switchShoppingSubTab('quick')" id="subtab-quick-btn" class="w-full py-3 px-4 rounded-xl text-sm font-bold bg-gray-100 text-gray-700 hover:bg-gray-200 transition text-left flex items-center justify-between shadow-sm">
+                    <span data-i18n="subTabQuick">Quick List</span>
+                    <span>⚡</span>
+                </button>
+            </div>
+
+            <!-- SMART LISTS SUB-VIEW -->
+            <div id="subview-smart" class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-lg font-bold text-gray-800" data-i18n="smartListsTitle">Current Smart List</h2>
+                    <button onclick="toggleSmartListHistory()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center space-x-1">
+                        <span>📜</span> <span data-i18n="btnHistory">History</span>
+                    </button>
+                </div>
+
+                <!-- Latest / Active Smart List -->
+                <div id="active-smart-list-container"></div>
+
+                <!-- Smart List History (Collapsible Accordion) -->
+                <div id="smart-list-history-panel" class="hidden pt-4 border-t border-gray-100 space-y-3">
+                    <h3 class="font-semibold text-sm text-gray-700" data-i18n="historyTitle">Previous Smart Lists (History)</h3>
+                    <div id="smart-list-history-items" class="space-y-2"></div>
+                </div>
+            </div>
+
+            <!-- QUICK LIST SUB-VIEW -->
+            <div id="subview-quick" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-gray-800" data-i18n="quickListTitle">Quick List</h2>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="clearQuickList()" class="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-2 rounded-xl text-xs font-semibold transition" title="Clear all items" data-i18n="btnClearAll">🗑️ Clear All</button>
+                        <button onclick="openShareModal('quick')" class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded-xl text-sm font-medium transition">📤 <span data-i18n="btnShare">Share</span></button>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="flex space-x-2">
+                        <input type="text" id="quick-item-input" placeholder="Add item..." data-i18n-ph="addItemPlaceholder" class="flex-grow px-4 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" onkeypress="if(event.key==='Enter') addQuickItem()">
+                        <button onclick="addQuickItem()" class="bg-amber-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-amber-700 transition" data-i18n="btnAdd">Add</button>
+                    </div>
+                    <div id="quick-list-items" class="space-y-1"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: WHAT CAN I COOK -->
+        <div id="view-what-can-i-cook" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-lg text-gray-800 flex items-center space-x-2">
+                        <span>🍳</span> <span data-i18n="whatCanICookTitle">What Can I Cook?</span>
+                    </h3>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="uncheckAllPantryItems()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-2.5 py-1 rounded-xl text-xs font-semibold transition flex items-center space-x-1">
+                            <span>🧹</span> <span data-i18n="btnUncheckAll">Uncheck All</span>
+                        </button>
+                        <span class="text-xs bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full font-medium" data-i18n="pantryHint">Check available ingredients</span>
+                    </div>
+                </div>
+                <p class="text-xs text-gray-500" data-i18n="pantryDesc">Check off ingredients you currently have in stock. Meals appear once you reach 50% matching items!</p>
+                
+                <div id="pantry-checklist" class="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-gray-100"></div>
+
+                <div class="mt-4 pt-4 border-t border-gray-100">
+                    <h4 class="text-sm font-semibold text-gray-700 mb-2" data-i18n="possibleMealsTitle">Possible Meals:</h4>
+                    <div id="pantry-matches" class="space-y-2"></div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- MODAL: SHARE & EXPORT -->
+    <div id="modal-share" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl">
+            <div class="flex justify-between items-center">
+                <h3 class="text-lg font-bold text-gray-800" data-i18n="shareTitle">Share Shopping List</h3>
+                <button onclick="closeShareModal()" class="text-gray-400 hover:text-gray-600 font-bold">✕</button>
+            </div>
+            
+            <p class="text-xs text-gray-500" data-i18n="shareSub">Choose how you would like to share or export your shopping list:</p>
+
+            <div class="space-y-2">
+                <button onclick="shareTextNative()" class="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-between">
+                    <span data-i18n="shareNative">📱 Share via System / Copy Text</span>
+                    <span>📋</span>
+                </button>
+                <button onclick="downloadTextList()" class="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-between">
+                    <span data-i18n="shareDownload">📄 Download as Text File (.txt)</span>
+                    <span>💾</span>
+                </button>
+                <button onclick="generateImageSnapshot()" class="w-full py-2.5 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-between">
+                    <span data-i18n="shareImage">🖼️ Export List as Image Snapshot</span>
+                    <span>📸</span>
+                </button>
+            </div>
+
+            <!-- Preview Card for Snapshot -->
+            <div id="share-card-preview" class="p-4 bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl space-y-2 text-xs">
+                <div class="font-bold text-emerald-900 border-b border-emerald-200 pb-1 flex justify-between">
+                    <span>🛒 <span data-i18n="sharePreviewTitle">Shopping List</span></span>
+                    <span id="share-card-date" class="text-[10px] text-emerald-700"></span>
+                </div>
+                <div id="share-card-items" class="space-y-1 text-gray-700 max-h-40 overflow-y-auto"></div>
+            </div>
+
+            <div class="flex justify-end pt-2">
+                <button onclick="closeShareModal()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-medium text-gray-700 transition" data-i18n="btnClose">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: DAY MEAL PLANNER CHOOSER & BUILDER -->
+    <div id="modal-day-planner" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center">
+                <h3 id="modal-day-title" class="text-lg font-bold text-gray-800">Plan Day</h3>
+                <button onclick="closeDayPlannerModal()" class="text-gray-400 hover:text-gray-600 font-bold">✕</button>
+            </div>
+            
+            <div id="planner-step-choice" class="space-y-3">
+                <p class="text-xs text-gray-500 font-medium" data-i18n="selectCategoryPrompt">Select meal category to edit:</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="selectMealSlot('breakfast')" class="p-3 bg-gray-50 hover:bg-emerald-50 hover:border-emerald-500 border border-gray-200 rounded-xl text-left transition font-semibold text-sm text-gray-700">🍳 <span data-i18n="slotBreakfast">Breakfast</span></button>
+                    <button onclick="selectMealSlot('lunch')" class="p-3 bg-gray-50 hover:bg-emerald-50 hover:border-emerald-500 border border-gray-200 rounded-xl text-left transition font-semibold text-sm text-gray-700">🍲 <span data-i18n="slotLunch">Lunch</span></button>
+                    <button onclick="selectMealSlot('dinner')" class="p-3 bg-gray-50 hover:bg-emerald-50 hover:border-emerald-500 border border-gray-200 rounded-xl text-left transition font-semibold text-sm text-gray-700">🍽️ <span data-i18n="slotDinner">Dinner</span></button>
+                    <button onclick="selectMealSlot('snack')" class="p-3 bg-gray-50 hover:bg-emerald-50 hover:border-emerald-500 border border-gray-200 rounded-xl text-left transition font-semibold text-sm text-gray-700">🍎 <span data-i18n="slotSnack">Snack</span></button>
+                </div>
+            </div>
+
+            <div id="planner-step-editor" class="hidden space-y-4">
+                <div class="flex items-center justify-between bg-emerald-50 px-3 py-2 rounded-xl">
+                    <span id="active-slot-label" class="text-xs font-bold text-emerald-800 uppercase">Breakfast</span>
+                    <button onclick="backToSlotChoice()" class="text-xs text-emerald-700 hover:underline" data-i18n="btnChangeCategory">← Change category</button>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <label class="text-xs font-semibold text-gray-600" data-i18n="selectFromMaster">Select from Master Meal Catalog</label>
+                        <select id="slot-catalog-select" onchange="onCatalogMealSelect(this.value)" class="text-xs p-1 rounded-lg border border-gray-200 bg-white">
+                            <option value="">-- Choose --</option>
+                        </select>
+                    </div>
+
+                    <div class="relative">
+                        <label class="block text-xs font-semibold text-gray-600 mb-1" data-i18n="mealNameLabel">Meal Name</label>
+                        <input type="text" id="slot-meal-name" oninput="handleMealNameInput(this.value)" autocomplete="off" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="e.g., Protein Oatmeal" data-i18n-ph="mealNamePlaceholder">
+                        <div id="meal-name-suggestions" class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 max-h-40 overflow-y-auto"></div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1" data-i18n="hintLabel">Hint / Recipe Link / Notes</label>
+                        <textarea id="slot-meal-hint" rows="2" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="e.g. Cook pasta 10 mins, https://recipe-link.com" data-i18n-ph="hintPlaceholder"></textarea>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-xs font-semibold text-gray-600" data-i18n="ingredientsLabel">Ingredients & Quantities</label>
+                            <button onclick="addSlotIngredientRow()" class="text-xs text-emerald-600 hover:underline font-semibold" data-i18n="btnAddIngredient">+ Add Ingredient</button>
+                        </div>
+                        <div id="slot-ingredients-list" class="space-y-2 max-h-44 overflow-y-auto pr-1"></div>
+                    </div>
+
+                    <div id="save-to-master-container" class="hidden pt-1 flex items-center space-x-2">
+                        <input type="checkbox" id="slot-save-master" class="rounded text-emerald-600 focus:ring-emerald-500">
+                        <label for="slot-save-master" class="text-[11px] font-medium text-emerald-700 cursor-pointer" data-i18n="saveToMasterLabel">➕ Save this new meal combination to Master Meal Catalog</label>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-2 pt-2 border-t border-gray-100">
+                    <button onclick="closeDayPlannerModal()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-medium text-gray-700 transition" data-i18n="btnCancel">Cancel</button>
+                    <button onclick="saveSlotPlan()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-xl text-sm font-medium text-white transition" data-i18n="btnSave">Save Meal</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD / EDIT MASTER MEAL -->
+    <div id="modal-add-meal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl">
+            <h3 id="modal-add-meal-title" class="text-lg font-bold text-gray-800" data-i18n="modalAddMealTitle">Add Meal to Master Meal Catalog</h3>
+            <input type="hidden" id="editing-meal-id" value="">
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1" data-i18n="mealNameLabel">Meal Name</label>
+                    <input type="text" id="new-meal-name" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="e.g., Spaghetti Bolognese" data-i18n-ph="mealNamePlaceholder">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1" data-i18n="hintLabel">Hint / Recipe Link / Notes</label>
+                    <textarea id="new-meal-hint" rows="2" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="e.g. Boil for 15 mins, or paste URL..." data-i18n-ph="hintPlaceholder"></textarea>
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-xs font-semibold text-gray-600" data-i18n="ingredientsLabel">Ingredients & Quantities</label>
+                        <button onclick="addCatalogIngredientRow()" class="text-xs text-emerald-600 hover:underline font-semibold" data-i18n="btnAddIngredient">+ Add Ingredient</button>
+                    </div>
+                    <div id="catalog-ingredients-list" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
+                </div>
+            </div>
+            <div class="flex justify-end space-x-2 pt-2">
+                <button onclick="closeAddMealModal()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-medium text-gray-700 transition" data-i18n="btnCancel">Cancel</button>
+                <button onclick="saveNewMeal()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-xl text-sm font-medium text-white transition" data-i18n="btnSave">Save Meal</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: STATISTICS -->
+    <div id="modal-stats" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl">
+            <div class="flex justify-between items-center">
+                <h3 class="text-lg font-bold text-gray-800" data-i18n="statsTitle">Ingredient Usage Statistics</h3>
+                <button onclick="closeStatisticsModal()" class="text-gray-400 hover:text-gray-600 font-bold">✕</button>
+            </div>
+            <div id="stats-content" class="space-y-3 max-h-60 overflow-y-auto pr-1"></div>
+            <div class="flex justify-end pt-2">
+                <button onclick="closeStatisticsModal()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-medium text-gray-700 transition" data-i18n="btnClose">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: PROFILE MANAGEMENT -->
+    <div id="modal-profile" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl">
+            <h3 class="text-lg font-bold text-gray-800" data-i18n="manageProfilesTitle">Manage Profiles</h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1" data-i18n="newProfileLabel">New Profile Name</label>
+                    <div class="flex space-x-2">
+                        <input type="text" id="new-profile-name" class="flex-grow px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="e.g., Family, Diet Plan" data-i18n-ph="profilePlaceholder">
+                        <button onclick="createProfile()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-medium" data-i18n="btnAdd">Add</button>
+                    </div>
+                </div>
+                <div class="pt-2 border-t border-gray-100">
+                    <label class="block text-xs font-semibold text-gray-600 mb-1" data-i18n="existingProfilesLabel">Existing Profiles</label>
+                    <div id="profile-list-manage" class="space-y-2"></div>
+                </div>
+            </div>
+            <div class="flex justify-end pt-2">
+                <button onclick="closeProfileModal()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-medium text-gray-700 transition" data-i18n="btnClose">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        let currentLang = 'en';
+        let viewHistory = ['home'];
+        let currentView = 'home';
+        
+        let profiles = ['Default'];
+        let currentProfile = 'Default';
+
+        let appData = {
+            'Default': {
+                masterMeals: [
+                    { id: 1, name: 'Spaghetti Bolognese', hint: 'Boil pasta for 10 min. Cook meat sauce thoroughly.', ingredients: [{name: 'spaghetti', qty: '500g'}, {name: 'beef', qty: '400g'}, {name: 'tomato sauce', qty: '1 jar'}, {name: 'garlic', qty: '2 cloves'}] },
+                    { id: 2, name: 'Grilled Salmon', hint: 'https://example.com/grilled-salmon-recipe', ingredients: [{name: 'salmon', qty: '2 fillets'}, {name: 'asparagus', qty: '1 bunch'}, {name: 'lemon', qty: '1'}] }
+                ],
+                monthlyPlan: {},
+                smartLists: [],
+                quickListActive: ['Milk', 'Bread'],
+                pantryStock: {}
+            }
+        };
+
+        let currentCalendarYear = 2026;
+        let currentCalendarMonth = 8; // September
+        let selectedCalendarDateStr = null;
+        let selectedDaySlot = null;
+        let expandedMeals = {};
+        let expandedSmartLists = {};
+        let currentSharingType = 'quick';
+
+        const translations = {
+            en: {
+                txtBack: "Back", txtHome: "Home", appTitle: "Meal Planner & Shopping",
+                homeWelcome: "Welcome to Your Kitchen", homeSubtitle: "Select a section below to manage your meals, shopping lists, or pantry matching.",
+                navPlanner: "Meal Planner", navPlannerSub: "Monthly calendar schedule & stats",
+                navShoppingLists: "Shopping Lists", navShoppingListsSub: "Smart Lists & Quick List",
+                navWhatToCook: "What Can I Cook", navWhatToCookSub: "Pantry ingredient matcher",
+                subTabSmart: "Smart Lists", subTabQuick: "Quick List",
+                btnStats: "Statistics", btnMasterCatalog: "Master Meal Catalog",
+                masterCatalogTitle: "Master Meal Catalog", btnAddMeal: "Add Meal",
+                smartListsTitle: "Smart Lists", btnGenerateList: "Generate Smart List",
+                quickListTitle: "Quick List", btnShare: "Share", btnAdd: "Add",
+                modalAddMealTitle: "Add Meal to Master Meal Catalog", modalEditMealTitle: "Edit Meal in Master Meal Catalog",
+                mealNameLabel: "Meal Name", ingredientsLabel: "Ingredients & Quantities", btnCancel: "Cancel", btnSave: "Save Meal",
+                statsTitle: "Ingredient Usage Statistics", btnClose: "Close",
+                whatCanICookTitle: "What Can I Cook?", pantryHint: "Check available ingredients",
+                pantryDesc: "Check off ingredients you currently have in stock. Meals appear once you reach 50% matching items!",
+                possibleMealsTitle: "Possible Meals:", noMealsMatch: "Select at least 50% of a meal's ingredients to see options...",
+                dayMon: "Mon", dayTue: "Tue", dayWed: "Wed", dayThu: "Thu", dayFri: "Fri", daySat: "Sat", daySun: "Sun",
+                btnHistory: "History", historyTitle: "Previous Smart Lists (History)", btnClearAll: "🗑️ Clear All", btnUncheckAll: "Uncheck All",
+                shareTitle: "Share Shopping List", shareSub: "Choose how you would like to share or export your shopping list:",
+                shareNative: "📱 Share via System / Copy Text", shareDownload: "📄 Download as Text File (.txt)", shareImage: "🖼️ Export List as Image Snapshot",
+                sharePreviewTitle: "Shopping List", selectCategoryPrompt: "Select meal category to edit:",
+                slotBreakfast: "Breakfast", slotLunch: "Lunch", slotDinner: "Dinner", slotSnack: "Snack",
+                btnChangeCategory: "← Change category", selectFromMaster: "Select from Master Meal Catalog", hintLabel: "Hint / Recipe Link / Notes",
+                btnAddIngredient: "+ Add Ingredient", saveToMasterLabel: "➕ Save this new meal combination to Master Meal Catalog",
+                manageProfilesTitle: "Manage Profiles", newProfileLabel: "New Profile Name", existingProfilesLabel: "Existing Profiles",
+                searchPlaceholder: "Search meals or filter by ingredient...", addItemPlaceholder: "Add item...", mealNamePlaceholder: "e.g., Spaghetti Bolognese",
+                hintPlaceholder: "e.g. Boil for 15 mins, or paste URL...", profilePlaceholder: "e.g., Family, Diet Plan",
+                emptyCatalog: "No meals found in Master Meal Catalog.", emptySmartLists: "No active smart list found. Select dates in the Meal Planner and click \"Generate Smart List\"!",
+                emptyQuickList: "Your Quick List is currently empty.", emptyPantryChecklist: "No ingredients found in Master Meal Catalog.",
+                noStats: "No scheduled meals found in your calendar to calculate statistics.",
+                smartListLabel: "Smart List", itemsAggregated: "items aggregated from schedule", addExtraItem: "Add extra item...", qtyPlaceholder: "Qty...",
+                rollUp: "▲ Roll Up", rollOut: "▼ Roll Out", chooseCatalogDefault: "-- Choose from Catalog --", chooseDefault: "-- Choose --"
+            },
+            de: {
+                txtBack: "Zrugg", txtHome: "Hoam", appTitle: "Mensa-Planer & Einkaafe",
+                homeWelcome: "Griaß di in deiner Kuchl", homeSubtitle: "Suach da aus, wosd heute machn mechtest: Essn plana, Zettl machn oder Vorräte oischaun.",
+                navPlanner: "Essensplaner", navPlannerSub: "Monatskalender & Statistiken",
+                navShoppingLists: "Einkaufszettln", navShoppingListsSub: "Smart-Zettln & Schnelle Lischtn",
+                navWhatToCook: "Wos kann i kochen", navWhatToCookSub: "Vorratsschrank-Abgleich",
+                subTabSmart: "Smart-Zettln", subTabQuick: "Schnelle Lischt",
+                btnStats: "Statistik", btnMasterCatalog: "Stamm-Katalog",
+                masterCatalogTitle: "Stamm-Rezeptkatalog", btnAddMeal: "Gericht hinzutuan",
+                smartListsTitle: "Smart-Zettln", btnGenerateList: "Smart-Lischt erzeugen",
+                quickListTitle: "Schnelle Lischt", btnShare: "Teiln", btnAdd: "Dazutuan",
+                modalAddMealTitle: "Neues Gericht dazutuan", modalEditMealTitle: "Gericht umbauen",
+                mealNameLabel: "Name vom Essen", ingredientsLabel: "Zutaten & Mengn", btnCancel: "Ochbrechn", btnSave: "Speichern",
+                statsTitle: "Zutaten-Verbrauchsstatistik", btnClose: "Zumachen",
+                whatCanICookTitle: "Wos kann i kochen?", pantryHint: "Vorräte abhaken",
+                pantryDesc: "Hake on, wosd dahoam hosch. Gerichte kemmen aufe, sobald 50% vo de Zutaten do sein!",
+                possibleMealsTitle: "Mögliche Gerichte:", noMealsMatch: "Wähl mindestens 50% vo de Zutaten aus...",
+                dayMon: "Mo", dayTue: "Di", dayWed: "Mi", dayThu: "Do", dayFri: "Fr", daySat: "Sa", daySun: "So",
+                btnHistory: "Verlauf", historyTitle: "Alte Smart-Zettln (Verlauf)", btnClearAll: "🗑️ Olles löschen", btnUncheckAll: "Olles abwhälen",
+                shareTitle: "Einkaufszettl teiln", shareSub: "Wähl aus, wia du den Zettl weitergebn odr speichern mechtest:",
+                shareNative: "📱 System-Teiln / Text kopiern", shareDownload: "📄 Als Textdatei (.txt) herunterladn", shareImage: "🖼️ Als Bild-Foto exportiern",
+                sharePreviewTitle: "Einkaufszettl", selectCategoryPrompt: "Wähl a Mahlzeit zum Bearbeiten:",
+                slotBreakfast: "Moorngessn", slotLunch: "Mittagessn", slotDinner: "Opendessn", slotSnack: "Jausn",
+                btnChangeCategory: "← Kategorie wechseln", selectFromMaster: "Ausm Stamm-Katalog aussuachn", hintLabel: "Tipp / Rezept-Link / Notizn",
+                btnAddIngredient: "+ Zutat dazutuan", saveToMasterLabel: "➕ Neues Gericht im Stamm-Katalog abspeichern",
+                manageProfilesTitle: "Profile verwalten", newProfileLabel: "Neues Profil Name", existingProfilesLabel: "Vorhandene Profile",
+                searchPlaceholder: "Gerichte suachn odr noch Zutaten filtern...", addItemPlaceholder: "Soche dazutuan...", mealNamePlaceholder: "z.B. Tiroler Gröstl",
+                hintPlaceholder: "z.B. 15 Min kochen odr Link einfügn...", profilePlaceholder: "z.B. Familie, Diät-Plan",
+                emptyCatalog: "Koine Gerichte im Stamm-Katalog gfunne.", emptySmartLists: "Koin aktiver Smart-Zettl. Wähl Tage im Kalender aus und klick 'Smart-Lischt erzeugen'!",
+                emptyQuickList: "Deine schnelle Lischt isch grad leer.", emptyPantryChecklist: "Koine Zutaten im Stamm-Katalog gfunne.",
+                noStats: "Koine geplanten Mahlzeiten im Kalender fir a Statistik gfunne.",
+                smartListLabel: "Smart-Zettl", itemsAggregated: "Zutaten ausm Kalender zammengetragen", addExtraItem: "Extra Soche dazutuan...", qtyPlaceholder: "Menge...",
+                rollUp: "▲ Zuamachn", rollOut: "▼ Aufmachn", chooseCatalogDefault: "-- Ausm Stamm-Katalog wähln --", chooseDefault: "-- Auswähln --"
+            }
+        };
+
+        const monthNamesByLang = {
+            en: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+            de: ["Jänner", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"]
+        };
+
+        function getData() { return appData[currentProfile]; }
+
+        function switchView(viewId, isBack = false) {
+            if (!isBack && currentView !== viewId) {
+                viewHistory.push(currentView);
+            }
+            currentView = viewId;
+
+            ['view-home', 'view-meal-planner', 'view-master-catalog', 'view-shopping-lists', 'view-what-can-i-cook'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+
+            document.getElementById(`view-${viewId}`).classList.remove('hidden');
+
+            const backBtn = document.getElementById('back-btn');
+            const homeBtn = document.getElementById('home-btn');
+            if (viewId === 'home') {
+                backBtn.classList.add('hidden');
+                homeBtn.classList.add('hidden');
+            } else {
+                backBtn.classList.remove('hidden');
+                homeBtn.classList.remove('hidden');
+            }
+
+            if (viewId === 'meal-planner') renderMonthlyCalendar();
+            if (viewId === 'master-catalog') renderMasterCatalog();
+            if (viewId === 'shopping-lists') renderSmartLists();
+            if (viewId === 'what-can-i-cook') renderPantryMatcher();
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function goBack() {
+            if (viewHistory.length > 0) {
+                let prevView = viewHistory.pop();
+                switchView(prevView, true);
+            } else {
+                switchView('home', true);
+            }
+        }
+
+        function goHome() {
+            viewHistory = ['home'];
+            switchView('home', true);
+        }
+
+        function changeLanguage(lang) {
+            currentLang = lang;
+            updateTexts();
+            if (currentView === 'meal-planner') renderMonthlyCalendar();
+            if (currentView === 'master-catalog') renderMasterCatalog();
+            if (currentView === 'shopping-lists') { renderSmartLists(); renderQuickList(); }
+            if (currentView === 'what-can-i-cook') renderPantryMatcher();
+        }
+
+        function updateTexts() {
+            const t = translations[currentLang];
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) el.innerText = t[key];
+            });
+            document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+                const key = el.getAttribute('data-i18n-ph');
+                if (t[key]) el.placeholder = t[key];
+            });
+        }
+
+        // Export / Import Data
+        function exportData() {
+            let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
+            let downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `meal_planner_backup_${currentProfile}_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function importData(event) {
+            let file = event.target.files[0];
+            if (!file) return;
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    let imported = JSON.parse(e.target.result);
+                    if (typeof imported === 'object' && imported !== null) {
+                        let confirmImport = confirm(`Do you want to overwrite your currently open profile "${currentProfile}" with the imported data?`);
+                        if (!confirmImport) {
+                            event.target.value = '';
+                            return;
+                        }
+
+                        if (imported[currentProfile]) {
+                            appData[currentProfile] = imported[currentProfile];
+                        } else {
+                            let firstKey = Object.keys(imported)[0];
+                            if (imported[firstKey] && imported[firstKey].masterMeals) {
+                                appData[currentProfile] = imported[firstKey];
+                            } else {
+                                appData[currentProfile] = imported;
+                            }
+                        }
+                        switchView(currentView, true);
+                        alert("Profile data successfully updated from file!");
+                    } else {
+                        alert("Invalid backup file format.");
+                    }
+                } catch (err) {
+                    alert("Error parsing JSON file.");
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        // Profiles Management
+        function renderProfileSelectors() {
+            let sel = document.getElementById('profile-selector');
+            sel.innerHTML = profiles.map(p => `<option value="${p}" ${p === currentProfile ? 'selected' : ''}>${p}</option>`).join('');
+            
+            let manageEl = document.getElementById('profile-list-manage');
+            manageEl.innerHTML = profiles.map(p => `
+                <div class="flex justify-between items-center bg-gray-50 p-2 rounded-xl text-xs">
+                    <span class="font-medium text-gray-800">${p}</span>
+                    <div class="space-x-1">
+                        <button onclick="renameProfilePrompt('${p}')" class="text-blue-600 hover:underline">Rename</button>
+                        ${profiles.length > 1 ? `<button onclick="deleteProfile('${p}')" class="text-red-500 hover:underline">Delete</button>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function switchProfile(prof) {
+            currentProfile = prof;
+            switchView(currentView, true);
+        }
+
+        function openProfileModal() {
+            document.getElementById('modal-profile').classList.remove('hidden');
+            renderProfileSelectors();
+        }
+
+        function closeProfileModal() {
+            document.getElementById('modal-profile').classList.add('hidden');
+            document.getElementById('new-profile-name').value = '';
+        }
+
+        function createProfile() {
+            let name = document.getElementById('new-profile-name').value.trim();
+            if (!name || profiles.includes(name)) {
+                alert("Invalid or existing profile name.");
+                return;
+            }
+            profiles.push(name);
+            appData[name] = { masterMeals: [], monthlyPlan: {}, smartLists: [], quickListActive: [], pantryStock: {} };
+            currentProfile = name;
+            document.getElementById('new-profile-name').value = '';
+            renderProfileSelectors();
+            switchProfile(currentProfile);
+            closeProfileModal();
+        }
+
+        function renameProfilePrompt(oldName) {
+            let newName = prompt("Enter new profile name:", oldName);
+            if (newName && newName.trim() && !profiles.includes(newName.trim())) {
+                newName = newName.trim();
+                profiles = profiles.map(p => p === oldName ? newName : p);
+                appData[newName] = appData[oldName];
+                delete appData[oldName];
+                if (currentProfile === oldName) currentProfile = newName;
+                renderProfileSelectors();
+                switchProfile(currentProfile);
+            }
+        }
+
+        function deleteProfile(name) {
+            if (profiles.length <= 1) return;
+            profiles = profiles.filter(p => p !== name);
+            delete appData[name];
+            currentProfile = profiles[0];
+            renderProfileSelectors();
+            switchProfile(currentProfile);
+        }
+
+        // Master Meal Catalog Operations
+        function renderMasterCatalog(filterText = '') {
+            const data = getData();
+            const listEl = document.getElementById('master-meal-list');
+            listEl.innerHTML = '';
+
+            let allIngredients = [...new Set(data.masterMeals.flatMap(m => m.ingredients.map(i => i.name)))];
+            let tagsEl = document.getElementById('quick-filter-tags');
+            tagsEl.innerHTML = allIngredients.slice(0, 6).map(ing => `
+                <button onclick="filterByTag('${ing}')" class="text-xs px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-emerald-100 text-gray-700 hover:text-emerald-800 transition">${ing}</button>
+            `).join('');
+
+            let filtered = data.masterMeals.filter(meal => {
+                return meal.name.toLowerCase().includes(filterText.toLowerCase()) || 
+                       meal.ingredients.some(i => i.name.toLowerCase().includes(filterText.toLowerCase()));
+            });
+
+            if (filtered.length === 0) {
+                listEl.innerHTML = `<p class="text-xs text-gray-400 italic text-center py-4">${translations[currentLang].emptyCatalog}</p>`;
+                return;
+            }
+
+            filtered.forEach(meal => {
+                let isExpanded = expandedMeals[meal.id] || false;
+                let div = document.createElement('div');
+                div.className = 'border border-gray-200 rounded-xl overflow-hidden transition bg-white';
+                
+                let isUrl = meal.hint && (meal.hint.startsWith('http://') || meal.hint.startsWith('https://'));
+                let hintHtml = meal.hint ? `
+                    <div class="mt-2 pt-2 border-t border-gray-100 text-xs text-gray-600 bg-amber-50/50 p-2 rounded-lg">
+                        <span class="font-semibold text-amber-800">💡 Hint / Recipe: </span> 
+                        ${isUrl ? `<a href="${meal.hint}" target="_blank" class="text-blue-600 underline">${meal.hint}</a>` : `<span>${meal.hint}</span>`}
+                    </div>
+                ` : '';
+
+                div.innerHTML = `
+                    <div class="px-4 py-3 flex justify-between items-center hover:bg-gray-50">
+                        <div onclick="toggleMealAccordion(${meal.id})" class="cursor-pointer flex-grow">
+                            <span class="font-semibold text-gray-800 text-sm">${meal.name}</span>
+                            <span class="text-xs text-gray-500 ml-2">${isExpanded ? '▲' : '▼'} (${meal.ingredients.length})</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="openEditMealModal(${meal.id})" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2.5 py-1 rounded-lg transition font-medium">✏️</button>
+                            <button onclick="deleteMasterMeal(${meal.id})" class="text-xs bg-red-50 hover:bg-red-100 text-red-600 px-2.5 py-1 rounded-lg transition font-medium">🗑️</button>
+                        </div>
+                    </div>
+                    <div class="${isExpanded ? 'block' : 'hidden'} px-4 py-3 bg-gray-50 border-t border-gray-100 text-xs space-y-1">
+                        ${meal.ingredients.map(ing => `<div class="flex justify-between py-1 border-b border-gray-100 last:border-0"><span class="font-medium text-gray-800">${ing.name}</span><span class="text-gray-500">${ing.qty || ''}</span></div>`).join('')}
+                        ${hintHtml}
+                    </div>
+                `;
+                listEl.appendChild(div);
+            });
+        }
+
+        function toggleMealAccordion(id) {
+            expandedMeals[id] = !expandedMeals[id];
+            renderMasterCatalog(document.getElementById('catalog-search').value);
+        }
+
+        function filterMasterCatalog() {
+            renderMasterCatalog(document.getElementById('catalog-search').value);
+        }
+
+        function filterByTag(tag) {
+            document.getElementById('catalog-search').value = tag;
+            renderMasterCatalog(tag);
+        }
+
+        function deleteMasterMeal(id) {
+            if (confirm("Are you sure you want to delete this meal from the catalog?")) {
+                const data = getData();
+                data.masterMeals = data.masterMeals.filter(m => m.id !== id);
+                renderMasterCatalog(document.getElementById('catalog-search').value);
+            }
+        }
+
+        function openAddMealModal() {
+            document.getElementById('editing-meal-id').value = '';
+            document.getElementById('modal-add-meal-title').innerText = translations[currentLang].modalAddMealTitle;
+            document.getElementById('new-meal-hint').value = '';
+            document.getElementById('modal-add-meal').classList.remove('hidden');
+            let container = document.getElementById('catalog-ingredients-list');
+            container.innerHTML = '';
+            addCatalogIngredientRow('', '');
+        }
+
+        function openEditMealModal(id) {
+            const data = getData();
+            let meal = data.masterMeals.find(m => m.id === id);
+            if (!meal) return;
+
+            document.getElementById('editing-meal-id').value = meal.id;
+            document.getElementById('modal-add-meal-title').innerText = translations[currentLang].modalEditMealTitle;
+            document.getElementById('new-meal-name').value = meal.name;
+            document.getElementById('new-meal-hint').value = meal.hint || '';
+
+            let container = document.getElementById('catalog-ingredients-list');
+            container.innerHTML = '';
+            meal.ingredients.forEach(i => addCatalogIngredientRow(i.name, i.qty));
+            addCatalogIngredientRow('', '');
+
+            document.getElementById('modal-add-meal').classList.remove('hidden');
+        }
+
+        function closeAddMealModal() {
+            document.getElementById('modal-add-meal').classList.add('hidden');
+            document.getElementById('new-meal-name').value = '';
+            document.getElementById('new-meal-hint').value = '';
+            document.getElementById('editing-meal-id').value = '';
+            document.getElementById('catalog-ingredients-list').innerHTML = '';
+        }
+
+        function addCatalogIngredientRow(name = '', qty = '') {
+            let container = document.getElementById('catalog-ingredients-list');
+            let row = document.createElement('div');
+            row.className = 'flex space-x-2 items-center';
+            row.innerHTML = `
+                <input type="text" placeholder="Ingredient name..." value="${name}" oninput="handleCatalogIngredientInput(this)" class="cat-ing-name flex-grow px-3 py-1.5 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                <input type="text" placeholder="Qty (e.g. 200g)" value="${qty}" oninput="handleCatalogIngredientInput(this)" class="cat-ing-qty w-28 px-3 py-1.5 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                <button onclick="this.parentElement.remove()" class="text-gray-400 hover:text-red-500 text-xs px-1 font-bold">✕</button>
+            `;
+            container.appendChild(row);
+        }
+
+        function handleCatalogIngredientInput(inputEl) {
+            let row = inputEl.parentElement;
+            let container = document.getElementById('catalog-ingredients-list');
+            if (row === container.lastElementChild) {
+                addCatalogIngredientRow('', '');
+            }
+        }
+
+        function saveNewMeal() {
+            let name = document.getElementById('new-meal-name').value.trim();
+            let hint = document.getElementById('new-meal-hint').value.trim();
+            if (!name) {
+                alert("Please enter a meal name.");
+                return;
+            }
+            let rows = document.querySelectorAll('#catalog-ingredients-list > div');
+            let ingredients = [];
+            rows.forEach(r => {
+                let ingName = r.querySelector('.cat-ing-name').value.trim();
+                let ingQty = r.querySelector('.cat-ing-qty').value.trim();
+                if (ingName) ingredients.push({ name: ingName.toLowerCase(), qty: ingQty });
+            });
+
+            if (ingredients.length === 0) {
+                alert("Please add at least one ingredient.");
+                return;
+            }
+
+            const data = getData();
+            let editingId = document.getElementById('editing-meal-id').value;
+
+            if (editingId) {
+                let meal = data.masterMeals.find(m => m.id === parseInt(editingId));
+                if (meal) {
+                    meal.name = name;
+                    meal.hint = hint;
+                    meal.ingredients = ingredients;
+                }
+            } else {
+                data.masterMeals.push({ id: Date.now(), name, hint, ingredients });
+            }
+
+            closeAddMealModal();
+            renderMasterCatalog(document.getElementById('catalog-search').value);
+        }
+
+        // Monthly Calendar & Smart List Generation
+        function renderMonthlyCalendar() {
+            const data = getData();
+            const monthNames = monthNamesByLang[currentLang] || monthNamesByLang.en;
+            document.getElementById('calendar-month-year').innerText = `${monthNames[currentCalendarMonth]} ${currentCalendarYear}`;
+
+            let grid = document.getElementById('monthly-calendar-grid');
+            grid.innerHTML = '';
+
+            let firstDayIndex = new Date(currentCalendarYear, currentCalendarMonth, 1).getDay();
+            firstDayIndex = (firstDayIndex === 0) ? 6 : firstDayIndex - 1;
+            let totalDays = new Date(currentCalendarYear, currentCalendarMonth + 1, 0).getDate();
+
+            for (let i = 0; i < firstDayIndex; i++) {
+                let emptyDiv = document.createElement('div');
+                emptyDiv.className = 'h-28 bg-gray-50/50 rounded-xl border border-dashed border-gray-100';
+                grid.appendChild(emptyDiv);
+            }
+
+            for (let day = 1; day <= totalDays; day++) {
+                let monthStr = String(currentCalendarMonth + 1).padStart(2, '0');
+                let dayStr = String(day).padStart(2, '0');
+                let dateKey = `${currentCalendarYear}-${monthStr}-${dayStr}`;
+
+                let dayPlan = data.monthlyPlan[dateKey] || {};
+                let cell = document.createElement('div');
+                cell.className = 'h-28 p-1.5 rounded-xl border border-gray-200 bg-white flex flex-col justify-between hover:border-emerald-500 transition relative overflow-hidden cursor-pointer';
+                cell.setAttribute('onclick', `openDayPlannerModal('${dateKey}')`);
+
+                let mealCount = Object.values(dayPlan).filter(v => v && v.name).length;
+
+                let slotsHtml = '';
+                const slotIcons = { breakfast: '🍳', lunch: '🍲', dinner: '🍽️', snack: '🍎' };
+                ['breakfast', 'lunch', 'dinner', 'snack'].forEach(slot => {
+                    if (dayPlan[slot] && dayPlan[slot].name) {
+                        slotsHtml += `
+                            <div class="flex items-center justify-between group/item bg-emerald-50/60 hover:bg-emerald-100 rounded px-1 py-0.5 my-0.5 transition" title="${dayPlan[slot].name}">
+                                <span class="truncate text-[10px] text-gray-800 font-medium flex-grow">${slotIcons[slot]} ${dayPlan[slot].name}</span>
+                                <button onclick="deleteCalendarMealSlot(event, '${dateKey}', '${slot}')" class="text-red-500 hover:text-red-700 font-bold text-[10px] ml-1 px-1 rounded hover:bg-red-100 transition" title="Delete meal">✕</button>
+                            </div>
+                        `;
+                    }
+                });
+
+                cell.innerHTML = `
+                    <div class="flex justify-between items-center text-xs pb-1 border-b border-gray-50">
+                        <input type="checkbox" data-date="${dateKey}" onclick="event.stopPropagation()" class="day-select-checkbox rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer">
+                        <span class="font-bold text-gray-700">${day}</span>
+                        ${mealCount > 0 ? `<span class="bg-emerald-100 text-emerald-800 px-1 py-0.2 rounded text-[9px] font-bold">${mealCount}m</span>` : '<span class="w-3"></span>'}
+                    </div>
+                    <div class="space-y-0.5 text-[10px] text-gray-500 overflow-y-auto flex-grow pt-0.5 max-h-20">
+                        ${slotsHtml}
+                    </div>
+                `;
+                grid.appendChild(cell);
+            }
+        }
+
+        // Quick 1-click Delete Meal Slot from Calendar Box
+        function deleteCalendarMealSlot(event, dateKey, slotKey) {
+            event.stopPropagation(); // Prevents opening the day planner modal
+            const data = getData();
+            if (data.monthlyPlan[dateKey] && data.monthlyPlan[dateKey][slotKey]) {
+                delete data.monthlyPlan[dateKey][slotKey];
+                renderMonthlyCalendar();
+            }
+        }
+
+        function changeMonth(direction) {
+            currentCalendarMonth += direction;
+            if (currentCalendarMonth > 11) {
+                currentCalendarMonth = 0;
+                currentCalendarYear++;
+            } else if (currentCalendarMonth < 0) {
+                currentCalendarMonth = 11;
+                currentCalendarYear--;
+            }
+            renderMonthlyCalendar();
+        }
+
+        function combineQuantities(qty1, qty2) {
+            if (!qty1) return qty2 || '';
+            if (!qty2) return qty1 || '';
+
+            const match1 = String(qty1).trim().match(/^([\d\.]+)\s*(.*)$/);
+            const match2 = String(qty2).trim().match(/^([\d\.]+)\s*(.*)$/);
+
+            if (match1 && match2 && match1[2].toLowerCase() === match2[2].toLowerCase()) {
+                const num = parseFloat(match1[1]) + parseFloat(match2[1]);
+                const unit = match1[2];
+                return unit ? `${num}${unit}` : `${num}`;
+            }
+
+            return `${qty1} + ${qty2}`;
+        }
+
+        function generateSmartListFromCheckboxes() {
+            let checkedBoxes = document.querySelectorAll('.day-select-checkbox:checked');
+            if (checkedBoxes.length === 0) {
+                alert("Please check at least one day in the calendar to generate a smart list.");
+                return;
+            }
+
+            const data = getData();
+            let selectedDateKeys = Array.from(checkedBoxes).map(cb => cb.getAttribute('data-date')).sort();
+            let itemMap = {};
+
+            selectedDateKeys.forEach(dateKey => {
+                let dayPlan = data.monthlyPlan[dateKey];
+                if (dayPlan) {
+                    ['breakfast', 'lunch', 'dinner', 'snack'].forEach(slot => {
+                        let meal = dayPlan[slot];
+                        if (meal && meal.ingredients) {
+                            meal.ingredients.forEach(ing => {
+                                let keyName = ing.name.toLowerCase().trim();
+                                if (!itemMap[keyName]) {
+                                    itemMap[keyName] = { name: ing.name, qty: ing.qty || '' };
+                                } else {
+                                    itemMap[keyName].qty = combineQuantities(itemMap[keyName].qty, ing.qty);
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+
+            let itemsArray = Object.values(itemMap);
+            if (itemsArray.length === 0) {
+                alert("No scheduled meals or ingredients found on the selected days.");
+                return;
+            }
+
+            data.smartLists.unshift({
+                id: Date.now(),
+                startDate: selectedDateKeys[0],
+                endDate: selectedDateKeys[selectedDateKeys.length - 1],
+                items: itemsArray
+            });
+
+            switchView('shopping-lists');
+            switchShoppingSubTab('smart');
+        }
+
+        // Day Planner Modal Logic
+        function openDayPlannerModal(dateKey) {
+            selectedCalendarDateStr = dateKey;
+            document.getElementById('modal-day-title').innerText = `Plan for ${dateKey}`;
+            document.getElementById('planner-step-choice').classList.remove('hidden');
+            document.getElementById('planner-step-editor').classList.add('hidden');
+            document.getElementById('modal-day-planner').classList.remove('hidden');
+        }
+
+        function selectMealSlot(slot) {
+            selectedDaySlot = slot;
+            const t = translations[currentLang];
+            const slotMap = { breakfast: t.slotBreakfast, lunch: t.slotLunch, dinner: t.slotDinner, snack: t.slotSnack };
+            document.getElementById('active-slot-label').innerText = slotMap[slot] || slot;
+            document.getElementById('planner-step-choice').classList.add('hidden');
+            document.getElementById('planner-step-editor').classList.remove('hidden');
+
+            const data = getData();
+            let catalogSelect = document.getElementById('slot-catalog-select');
+            catalogSelect.innerHTML = `<option value="">${t.chooseCatalogDefault}</option>` + data.masterMeals.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+
+            let slotData = data.monthlyPlan[selectedCalendarDateStr]?.[slot] || { name: '', hint: '', ingredients: [] };
+            document.getElementById('slot-meal-name').value = slotData.name || '';
+            document.getElementById('slot-meal-hint').value = slotData.hint || '';
+            
+            let container = document.getElementById('slot-ingredients-list');
+            container.innerHTML = '';
+            if (slotData.ingredients && slotData.ingredients.length > 0) {
+                slotData.ingredients.forEach(i => addSlotIngredientRow(i.name, i.qty));
+            }
+            addSlotIngredientRow('', '');
+            checkSlotMasterMatch();
+        }
+
+        function backToSlotChoice() {
+            document.getElementById('planner-step-editor').classList.add('hidden');
+            document.getElementById('planner-step-choice').classList.remove('hidden');
+        }
+
+        function closeDayPlannerModal() {
+            document.getElementById('modal-day-planner').classList.add('hidden');
+            selectedCalendarDateStr = null;
+            selectedDaySlot = null;
+        }
+
+        function addSlotIngredientRow(name = '', qty = '') {
+            let container = document.getElementById('slot-ingredients-list');
+            let row = document.createElement('div');
+            row.className = 'flex space-x-2 items-center';
+            row.innerHTML = `
+                <input type="text" placeholder="Ingredient..." value="${name}" class="slot-ing-name flex-grow px-3 py-1.5 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500" oninput="handleSlotIngredientInput(this)">
+                <input type="text" placeholder="Qty..." value="${qty}" class="slot-ing-qty w-28 px-3 py-1.5 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500" oninput="handleSlotIngredientInput(this)">
+                <button onclick="this.parentElement.remove(); checkSlotMasterMatch();" class="text-gray-400 hover:text-red-500 text-xs px-1 font-bold">✕</button>
+            `;
+            container.appendChild(row);
+        }
+
+        function handleSlotIngredientInput(inputEl) {
+            let row = inputEl.parentElement;
+            let container = document.getElementById('slot-ingredients-list');
+            if (row === container.lastElementChild) {
+                addSlotIngredientRow('', '');
+            }
+            checkSlotMasterMatch();
+        }
+
+        function onCatalogMealSelect(mealId) {
+            if (!mealId) return;
+            const data = getData();
+            let meal = data.masterMeals.find(m => m.id === parseInt(mealId));
+            if (meal) {
+                document.getElementById('slot-meal-name').value = meal.name;
+                document.getElementById('slot-meal-hint').value = meal.hint || '';
+                let container = document.getElementById('slot-ingredients-list');
+                container.innerHTML = '';
+                meal.ingredients.forEach(i => addSlotIngredientRow(i.name, i.qty));
+                addSlotIngredientRow('', '');
+                document.getElementById('save-to-master-container').classList.add('hidden');
+            }
+        }
+
+        function handleMealNameInput(val) {
+            let suggBox = document.getElementById('meal-name-suggestions');
+            const data = getData();
+            if (!val.trim()) {
+                suggBox.classList.add('hidden');
+                return;
+            }
+            let matches = data.masterMeals.filter(m => m.name.toLowerCase().includes(val.toLowerCase()));
+            if (matches.length === 0) {
+                suggBox.classList.add('hidden');
+            } else {
+                suggBox.innerHTML = matches.map(m => `
+                    <div onclick="selectCatalogMealByName('${m.name}')" class="px-3 py-2 text-xs hover:bg-emerald-50 cursor-pointer font-medium text-gray-700">${m.name}</div>
+                `).join('');
+                suggBox.classList.remove('hidden');
+            }
+            checkSlotMasterMatch();
+        }
+
+        function selectCatalogMealByName(name) {
+            const data = getData();
+            let meal = data.masterMeals.find(m => m.name === name);
+            if (meal) {
+                document.getElementById('slot-meal-name').value = meal.name;
+                document.getElementById('slot-meal-hint').value = meal.hint || '';
+                let container = document.getElementById('slot-ingredients-list');
+                container.innerHTML = '';
+                meal.ingredients.forEach(i => addSlotIngredientRow(i.name, i.qty));
+                addSlotIngredientRow('', '');
+            }
+            document.getElementById('meal-name-suggestions').classList.add('hidden');
+            checkSlotMasterMatch();
+        }
+
+        function checkSlotMasterMatch() {
+            let nameVal = document.getElementById('slot-meal-name').value.trim().toLowerCase();
+            let rows = document.querySelectorAll('#slot-ingredients-list > div');
+            let currentIngs = [];
+            rows.forEach(r => {
+                let iname = r.querySelector('.slot-ing-name').value.trim().toLowerCase();
+                if (iname) currentIngs.push(iname);
+            });
+
+            const data = getData();
+            let exactMatch = data.masterMeals.some(m => {
+                let mIngs = m.ingredients.map(i => i.name.toLowerCase());
+                return m.name.toLowerCase() === nameVal && mIngs.sort().join(',') === currentIngs.sort().join(',');
+            });
+
+            let saveContainer = document.getElementById('save-to-master-container');
+            if (nameVal && !exactMatch) {
+                saveContainer.classList.remove('hidden');
+            } else {
+                saveContainer.classList.add('hidden');
+            }
+        }
+
+        function saveSlotPlan() {
+            if (!selectedCalendarDateStr || !selectedDaySlot) return;
+            const data = getData();
+            let name = document.getElementById('slot-meal-name').value.trim();
+            let hint = document.getElementById('slot-meal-hint').value.trim();
+            let rows = document.querySelectorAll('#slot-ingredients-list > div');
+            let ingredients = [];
+            rows.forEach(r => {
+                let iname = r.querySelector('.slot-ing-name').value.trim().toLowerCase();
+                let iqty = r.querySelector('.slot-ing-qty').value.trim();
+                if (iname) ingredients.push({ name: iname, qty: iqty });
+            });
+
+            if (!data.monthlyPlan[selectedCalendarDateStr]) {
+                data.monthlyPlan[selectedCalendarDateStr] = {};
+            }
+
+            if (name || ingredients.length > 0) {
+                data.monthlyPlan[selectedCalendarDateStr][selectedDaySlot] = { name, hint, ingredients };
+
+                let saveMasterCheckbox = document.getElementById('slot-save-master');
+                if (saveMasterCheckbox && saveMasterCheckbox.checked && name) {
+                    data.masterMeals.push({ id: Date.now() + Math.random(), name, hint, ingredients });
+                }
+            } else {
+                data.monthlyPlan[selectedCalendarDateStr][selectedDaySlot] = null;
+            }
+
+            closeDayPlannerModal();
+            renderMonthlyCalendar();
+        }
+
+        // Subtabs: Shopping Lists (Smart vs Quick)
+        function switchShoppingSubTab(subTab) {
+            const smartSub = document.getElementById('subview-smart');
+            const quickSub = document.getElementById('subview-quick');
+            const smartBtn = document.getElementById('subtab-smart-btn');
+            const quickBtn = document.getElementById('subtab-quick-btn');
+
+            if (subTab === 'smart') {
+                smartSub.classList.remove('hidden');
+                quickSub.classList.add('hidden');
+                smartBtn.className = "w-full py-3 px-4 rounded-xl text-sm font-bold bg-blue-600 text-white transition text-left flex items-center justify-between shadow-sm";
+                quickBtn.className = "w-full py-3 px-4 rounded-xl text-sm font-bold bg-gray-100 text-gray-700 hover:bg-gray-200 transition text-left flex items-center justify-between shadow-sm";
+                renderSmartLists();
+            } else {
+                smartSub.classList.add('hidden');
+                quickSub.classList.remove('hidden');
+                quickBtn.className = "w-full py-3 px-4 rounded-xl text-sm font-bold bg-amber-600 text-white transition text-left flex items-center justify-between shadow-sm";
+                smartBtn.className = "w-full py-3 px-4 rounded-xl text-sm font-bold bg-gray-100 text-gray-700 hover:bg-gray-200 transition text-left flex items-center justify-between shadow-sm";
+                renderQuickList();
+            }
+        }
+
+        // Render Smart Lists
+        function renderSmartLists() {
+            const data = getData();
+            const t = translations[currentLang];
+            let activeContainer = document.getElementById('active-smart-list-container');
+            let historyContainer = document.getElementById('smart-list-history-items');
+            activeContainer.innerHTML = '';
+            historyContainer.innerHTML = '';
+
+            if (data.smartLists.length === 0) {
+                activeContainer.innerHTML = `<p class="text-xs text-gray-400 italic text-center py-6">${t.emptySmartLists}</p>`;
+                return;
+            }
+
+            let latestList = data.smartLists[0];
+            let latestDiv = document.createElement('div');
+            latestDiv.className = 'p-5 rounded-2xl border border-blue-200 bg-gradient-to-b from-blue-50/50 to-white space-y-4 shadow-sm';
+            latestDiv.innerHTML = `
+                <div class="flex justify-between items-center pb-2 border-b border-blue-100">
+                    <div>
+                        <span class="font-bold text-base text-gray-800">${t.smartListLabel} (${latestList.startDate} to ${latestList.endDate})</span>
+                        <p class="text-xs text-gray-500 mt-0.5">${latestList.items.length} ${t.itemsAggregated}</p>
+                    </div>
+                    <div class="flex space-x-1">
+                        <button onclick="openShareModal('smart')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center space-x-1">
+                            <span>📤</span> <span>${t.btnShare}</span>
+                        </button>
+                        <button onclick="deleteSmartList(${latestList.id})" class="text-red-500 hover:bg-red-50 p-1.5 rounded-lg text-xs font-medium transition" title="Delete List">🗑️</button>
+                    </div>
+                </div>
+
+                <div class="flex space-x-2">
+                    <input type="text" id="add-smart-item-name-${latestList.id}" placeholder="${t.addExtraItem}" class="flex-grow px-3 py-1.5 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="add-smart-item-qty-${latestList.id}" placeholder="${t.qtyPlaceholder}" class="w-20 px-3 py-1.5 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <button onclick="addExtraSmartItem(${latestList.id})" class="bg-blue-600 text-white px-3 py-1.5 rounded-xl text-xs font-medium hover:bg-blue-700 transition">+ ${t.btnAdd}</button>
+                </div>
+
+                <div class="space-y-1">
+                    ${latestList.items.map((item, idx) => `
+                        <label class="flex items-center justify-between py-2 px-3 bg-white rounded-xl border border-gray-100 text-xs cursor-pointer transition select-none hover:border-blue-200">
+                            <div class="flex items-center space-x-2">
+                                <input type="checkbox" onchange="toggleShoppingItemStyle(this)" class="rounded text-blue-600 focus:ring-blue-500">
+                                <span class="font-medium text-gray-800">${item.name}</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-gray-500 font-semibold">${item.qty || ''}</span>
+                                <button onclick="removeSmartListItem(${latestList.id}, ${idx}); event.preventDefault();" class="text-gray-300 hover:text-red-500 text-xs font-bold pl-1">✕</button>
+                            </div>
+                        </label>
+                    `).join('')}
+                </div>
+            `;
+            activeContainer.appendChild(latestDiv);
+
+            let historyLists = data.smartLists.slice(1);
+            if (historyLists.length === 0) {
+                historyContainer.innerHTML = `<p class="text-xs text-gray-400 italic">No previous smart list history.</p>`;
+                return;
+            }
+
+            historyLists.forEach(list => {
+                let isExpanded = expandedSmartLists[list.id] || false;
+                let hDiv = document.createElement('div');
+                hDiv.className = 'border border-gray-200 rounded-xl overflow-hidden bg-gray-50 transition';
+                hDiv.innerHTML = `
+                    <div class="px-4 py-3 flex justify-between items-center cursor-pointer hover:bg-gray-100/80" onclick="toggleSmartListAccordion(${list.id})">
+                        <span class="font-bold text-xs text-gray-700">List (${list.startDate} to ${list.endDate}) — ${list.items.length} items</span>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs text-blue-600 font-semibold">${isExpanded ? t.rollUp : t.rollOut}</span>
+                            <button onclick="deleteSmartList(${list.id}); event.stopPropagation();" class="text-red-400 hover:text-red-600 text-xs font-bold px-1">🗑️</button>
+                        </div>
+                    </div>
+                    <div class="${isExpanded ? 'block' : 'hidden'} px-4 py-3 bg-white border-t border-gray-100 space-y-1">
+                        ${list.items.map(i => `<div class="flex justify-between text-xs py-1 border-b border-gray-50 last:border-0"><span class="text-gray-800 font-medium">${i.name}</span><span class="text-gray-500">${i.qty || ''}</span></div>`).join('')}
+                    </div>
+                `;
+                historyContainer.appendChild(hDiv);
+            });
+        }
+
+        function toggleSmartListHistory() {
+            document.getElementById('smart-list-history-panel').classList.toggle('hidden');
+        }
+
+        function toggleSmartListAccordion(id) {
+            expandedSmartLists[id] = !expandedSmartLists[id];
+            renderSmartLists();
+        }
+
+        function addExtraSmartItem(listId) {
+            let nameEl = document.getElementById(`add-smart-item-name-${listId}`);
+            let qtyEl = document.getElementById(`add-smart-item-qty-${listId}`);
+            if (!nameEl || !nameEl.value.trim()) return;
+
+            const data = getData();
+            let list = data.smartLists.find(l => l.id === listId);
+            if (list) {
+                list.items.push({ name: nameEl.value.trim(), qty: qtyEl.value.trim() });
+                renderSmartLists();
+            }
+        }
+
+        function removeSmartListItem(listId, itemIdx) {
+            const data = getData();
+            let list = data.smartLists.find(l => l.id === listId);
+            if (list) {
+                list.items.splice(itemIdx, 1);
+                renderSmartLists();
+            }
+        }
+
+        function deleteSmartList(id) {
+            if (confirm("Are you sure you want to delete this smart list?")) {
+                const data = getData();
+                data.smartLists = data.smartLists.filter(l => l.id !== id);
+                renderSmartLists();
+            }
+        }
+
+        function toggleShoppingItemStyle(checkbox) {
+            let labelRow = checkbox.closest('label');
+            let spanName = labelRow.querySelector('span.font-medium');
+            let spanQty = labelRow.querySelector('span.text-gray-500');
+            if (checkbox.checked) {
+                labelRow.classList.add('bg-gray-100/70', 'border-gray-200');
+                spanName.classList.add('line-through', 'text-gray-400');
+                if (spanQty) spanQty.classList.add('line-through', 'text-gray-400');
+            } else {
+                labelRow.classList.remove('bg-gray-100/70', 'border-gray-200');
+                spanName.classList.remove('line-through', 'text-gray-400');
+                if (spanQty) spanQty.classList.remove('line-through', 'text-gray-400');
+            }
+        }
+
+        // Render Quick List
+        function renderQuickList() {
+            const data = getData();
+            let listEl = document.getElementById('quick-list-items');
+            listEl.innerHTML = '';
+
+            if (data.quickListActive.length === 0) {
+                listEl.innerHTML = `<p class="text-xs text-gray-400 italic text-center py-4">${translations[currentLang].emptyQuickList}</p>`;
+                return;
+            }
+
+            data.quickListActive.forEach((item, index) => {
+                let div = document.createElement('div');
+                div.className = 'flex justify-between items-center p-2 rounded-lg bg-gray-50 border border-gray-100 text-sm';
+                div.innerHTML = `
+                    <label class="flex items-center space-x-2 cursor-pointer select-none flex-grow">
+                        <input type="checkbox" onchange="toggleShoppingItemStyle(this)" class="rounded text-amber-600 focus:ring-amber-500">
+                        <span class="font-medium text-gray-800">${item}</span>
+                    </label>
+                    <button onclick="removeQuickItem(${index})" class="text-gray-400 hover:text-red-500 text-xs px-2">✕</button>
+                `;
+                listEl.appendChild(div);
+            });
+        }
+
+        function addQuickItem() {
+            const data = getData();
+            let input = document.getElementById('quick-item-input');
+            if (input.value.trim()) {
+                data.quickListActive.push(input.value.trim());
+                input.value = '';
+                renderQuickList();
+            }
+        }
+
+        function removeQuickItem(index) {
+            const data = getData();
+            data.quickListActive.splice(index, 1);
+            renderQuickList();
+        }
+
+        function clearQuickList() {
+            const data = getData();
+            if (data.quickListActive.length === 0) return;
+            if (confirm("Are you sure you want to clear all items from your Quick List?")) {
+                data.quickListActive = [];
+                renderQuickList();
+            }
+        }
+
+        // Sharing Modal & Multi-format Export
+        function openShareModal(type) {
+            currentSharingType = type;
+            const data = getData();
+            document.getElementById('modal-share').classList.remove('hidden');
+            document.getElementById('share-card-date').innerText = new Date().toISOString().split('T')[0];
+
+            let itemsBox = document.getElementById('share-card-items');
+            itemsBox.innerHTML = '';
+
+            let listItems = [];
+            if (type === 'quick') {
+                listItems = data.quickListActive.map(i => `• ${i}`);
+            } else if (type === 'smart' && data.smartLists.length > 0) {
+                listItems = data.smartLists[0].items.map(i => `• ${i.name} ${i.qty ? '(' + i.qty + ')' : ''}`);
+            }
+
+            if (listItems.length === 0) {
+                itemsBox.innerHTML = `<p class="italic text-gray-400 text-xs">No items in list to share.</p>`;
+            } else {
+                itemsBox.innerHTML = listItems.map(i => `<div>${i}</div>`).join('');
+            }
+        }
+
+        function closeShareModal() {
+            document.getElementById('modal-share').classList.add('hidden');
+        }
+
+        function getShareFormattedText() {
+            const data = getData();
+            let dateStr = new Date().toISOString().split('T')[0];
+            let text = `🛒 Shopping List (${dateStr})\n\n`;
+
+            if (currentSharingType === 'quick') {
+                text += data.quickListActive.map(i => `[ ] ${i}`).join('\n');
+            } else if (currentSharingType === 'smart' && data.smartLists.length > 0) {
+                text += data.smartLists[0].items.map(i => `[ ] ${i.name} ${i.qty ? '(' + i.qty + ')' : ''}`).join('\n');
+            }
+            return text;
+        }
+
+        function shareTextNative() {
+            let text = getShareFormattedText();
+            if (navigator.share) {
+                navigator.share({ title: 'Shopping List', text: text }).catch(() => {});
+            } else {
+                navigator.clipboard.writeText(text);
+                alert("Shopping list copied to clipboard!");
+            }
+        }
+
+        function downloadTextList() {
+            let text = getShareFormattedText();
+            let blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            let link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `shopping_list_${new Date().toISOString().split('T')[0]}.txt`;
+            link.click();
+        }
+
+        function generateImageSnapshot() {
+            let text = getShareFormattedText();
+            let lines = text.split('\n');
+
+            let canvas = document.createElement('canvas');
+            canvas.width = 500;
+            canvas.height = Math.max(300, lines.length * 28 + 80);
+            let ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#f0fdf4';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#059669';
+            ctx.lineWidth = 8;
+            ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#065f46';
+            ctx.font = 'bold 20px sans-serif';
+            ctx.fillText(lines[0], 30, 45);
+
+            ctx.fillStyle = '#1f2937';
+            ctx.font = '15px sans-serif';
+            let y = 85;
+            for (let i = 2; i < lines.length; i++) {
+                if (lines[i].trim()) {
+                    ctx.fillText(lines[i], 35, y);
+                    y += 28;
+                }
+            }
+
+            let link = document.createElement('a');
+            link.download = `shopping_list_${new Date().toISOString().split('T')[0]}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // Pantry Matcher
+        function renderPantryMatcher() {
+            const data = getData();
+            let allIngredients = [...new Set(data.masterMeals.flatMap(m => m.ingredients.map(i => i.name)))].sort();
+            let checklistEl = document.getElementById('pantry-checklist');
+            checklistEl.innerHTML = '';
+
+            if (allIngredients.length === 0) {
+                checklistEl.innerHTML = `<p class="text-xs text-gray-400 italic">${translations[currentLang].emptyPantryChecklist}</p>`;
+                document.getElementById('pantry-matches').innerHTML = '';
+                return;
+            }
+
+            allIngredients.forEach(ing => {
+                let isChecked = data.pantryStock[ing] || false;
+                let label = document.createElement('label');
+                label.className = `flex items-center space-x-2 p-2 rounded-xl border text-xs cursor-pointer transition ${isChecked ? 'bg-amber-50 border-amber-300 text-amber-900 font-medium' : 'bg-gray-50 border-gray-200 text-gray-700'}`;
+                label.innerHTML = `
+                    <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="togglePantryItem('${ing}')" class="rounded text-amber-600 focus:ring-amber-500">
+                    <span class="truncate">${ing}</span>
+                `;
+                checklistEl.appendChild(label);
+            });
+            renderPantryMatches();
+        }
+
+        function togglePantryItem(ing) {
+            const data = getData();
+            data.pantryStock[ing] = !data.pantryStock[ing];
+            renderPantryMatcher();
+        }
+
+        function uncheckAllPantryItems() {
+            const data = getData();
+            data.pantryStock = {};
+            renderPantryMatcher();
+        }
+
+        function renderPantryMatches() {
+            const data = getData();
+            let matchesEl = document.getElementById('pantry-matches');
+            matchesEl.innerHTML = '';
+            let matchedResults = [];
+
+            data.masterMeals.forEach(meal => {
+                let total = meal.ingredients.length;
+                let availableCount = meal.ingredients.filter(ing => data.pantryStock[ing.name]).length;
+                let ratio = total > 0 ? (availableCount / total) : 0;
+
+                if (ratio >= 0.5) {
+                    matchedResults.push({ meal, availableCount, total, ratio });
+                }
+            });
+
+            if (matchedResults.length === 0) {
+                matchesEl.innerHTML = `<p class="text-xs text-gray-400 italic">${translations[currentLang].noMealsMatch}</p>`;
+                return;
+            }
+
+            matchedResults.forEach(({ meal, availableCount, total, ratio }) => {
+                let isComplete = ratio === 1;
+                let div = document.createElement('div');
+                div.className = `p-3 rounded-xl border flex justify-between items-center text-xs ${isComplete ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-semibold' : 'bg-gray-50 border-gray-200 text-gray-600'}`;
+                div.innerHTML = `
+                    <span>${meal.name}</span>
+                    <span class="px-2 py-0.5 rounded-full ${isComplete ? 'bg-emerald-600 text-white' : 'bg-gray-200 text-gray-700'}">${availableCount}/${total} ingredients</span>
+                `;
+                matchesEl.appendChild(div);
+            });
+        }
+
+        // Statistics Modal
+        function openStatisticsModal() {
+            document.getElementById('modal-stats').classList.remove('hidden');
+            renderStatsData();
+        }
+
+        function closeStatisticsModal() {
+            document.getElementById('modal-stats').classList.add('hidden');
+        }
+
+        function renderStatsData() {
+            const data = getData();
+            let container = document.getElementById('stats-content');
+            container.innerHTML = '';
+
+            let ingredientCounts = {};
+            Object.values(data.monthlyPlan).forEach(dayPlan => {
+                if (dayPlan) {
+                    ['breakfast', 'lunch', 'dinner', 'snack'].forEach(slot => {
+                        let mealObj = dayPlan[slot];
+                        if (mealObj && mealObj.ingredients) {
+                            mealObj.ingredients.forEach(ing => {
+                                ingredientCounts[ing.name] = (ingredientCounts[ing.name] || 0) + 1;
+                            });
+                        }
+                    });
+                }
+            });
+
+            let entries = Object.entries(ingredientCounts);
+            if (entries.length === 0) {
+                container.innerHTML = `<p class="text-xs text-gray-400 italic text-center py-4">${translations[currentLang].noStats}</p>`;
+                return;
+            }
+
+            entries.sort((a, b) => b[1] - a[1]);
+            let maxCount = entries[0][1];
+
+            entries.forEach(([ing, count]) => {
+                let percentage = Math.round((count / maxCount) * 100);
+                let div = document.createElement('div');
+                div.className = 'space-y-1';
+                div.innerHTML = `
+                    <div class="flex justify-between text-xs font-medium text-gray-700">
+                        <span class="capitalize">${ing}</span>
+                        <span>${count}</span>
+                    </div>
+                    <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+                        <div class="bg-indigo-600 h-full rounded-full" style="width: ${percentage}%;"></div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        renderProfileSelectors();
+        updateTexts();
+    </script>
+</body>
+</html>

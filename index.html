@@ -13,7 +13,7 @@
 
     <!-- Top Navigation / Header -->
     <header class="bg-emerald-600 text-white shadow-md sticky top-0 z-50">
-        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-2">
             <div class="flex items-center space-x-2">
                 <button id="back-btn" onclick="goBack()" class="hidden bg-emerald-700 hover:bg-emerald-800 p-2 rounded-lg text-sm font-medium transition flex items-center space-x-1" title="Back">
                     ← <span id="txt-back" data-i18n="txtBack">Back</span>
@@ -68,7 +68,7 @@
                     <div class="bg-emerald-100 text-emerald-600 p-3 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition text-2xl">📅</div>
                     <div>
                         <h3 class="font-bold text-lg text-gray-800" data-i18n="navPlanner">Meal Planner</h3>
-                        <p class="text-xs text-gray-500 mt-0.5" data-i18n="navPlannerSub">Monthly calendar schedule & stats</p>
+                        <p class="text-xs text-gray-500 mt-0.5" data-i18n="navPlannerSub">Linear calendar schedule & stats</p>
                     </div>
                 </button>
 
@@ -96,8 +96,8 @@
                 <div class="flex items-center space-x-3">
                     <h2 id="calendar-month-year" class="text-xl font-bold text-gray-800">September 2026</h2>
                     <div class="flex space-x-1">
-                        <button onclick="changeMonth(-1)" class="p-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-bold">◀</button>
-                        <button onclick="changeMonth(1)" class="p-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-bold">▶</button>
+                        <button onclick="changeMonth(-1)" class="p-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-bold" title="Previous Month">◀</button>
+                        <button onclick="changeMonth(1)" class="p-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs font-bold" title="Next Month">▶</button>
                     </div>
                 </div>
                 <div class="flex flex-wrap gap-2 items-center">
@@ -113,11 +113,8 @@
                 </div>
             </div>
 
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
-                <div class="grid grid-cols-7 gap-2 text-center font-bold text-xs text-gray-500 pb-2 border-b border-gray-100">
-                    <div data-i18n="dayMon">Mon</div><div data-i18n="dayTue">Tue</div><div data-i18n="dayWed">Wed</div><div data-i18n="dayThu">Thu</div><div data-i18n="dayFri">Fri</div><div data-i18n="daySat">Sat</div><div data-i18n="daySun">Sun</div>
-                </div>
-                <div id="monthly-calendar-grid" class="grid grid-cols-7 gap-2"></div>
+            <div class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100 space-y-3">
+                <div id="linear-calendar-container" class="space-y-2"></div>
             </div>
         </div>
 
@@ -414,6 +411,7 @@
 
         let currentCalendarYear = 2026;
         let currentCalendarMonth = 8; // September
+        let linearCalendarLoadedMonths = 2; // Infinite scroll tracking count
         let selectedCalendarDateStr = null;
         let selectedDaySlot = null;
         let expandedMeals = {};
@@ -424,7 +422,7 @@
             en: {
                 txtBack: "Back", txtHome: "Home", appTitle: "Meal Planner & Shopping",
                 homeWelcome: "Welcome to Your Kitchen", homeSubtitle: "Select a section below to manage your meals, shopping lists, or pantry matching.",
-                navPlanner: "Meal Planner", navPlannerSub: "Monthly calendar schedule & stats",
+                navPlanner: "Meal Planner", navPlannerSub: "Linear calendar schedule & stats",
                 navShoppingLists: "Shopping Lists", navShoppingListsSub: "Smart Lists & Quick List",
                 navWhatToCook: "What Can I Cook", navWhatToCookSub: "Pantry ingredient matcher",
                 subTabSmart: "Smart Lists", subTabQuick: "Quick List",
@@ -453,12 +451,13 @@
                 emptyQuickList: "Your Quick List is currently empty.", emptyPantryChecklist: "No ingredients found in Master Meal Catalog.",
                 noStats: "No scheduled meals found in your calendar to calculate statistics.",
                 smartListLabel: "Smart List", itemsAggregated: "items aggregated from schedule", addExtraItem: "Add extra item...", qtyPlaceholder: "Qty...",
-                rollUp: "▲ Roll Up", rollOut: "▼ Roll Out", chooseCatalogDefault: "-- Choose from Catalog --", chooseDefault: "-- Choose --"
+                rollUp: "▲ Roll Up", rollOut: "▼ Roll Out", chooseCatalogDefault: "-- Choose from Catalog --", chooseDefault: "-- Choose --",
+                monday: "Monday", tuesday: "Tuesday", wednesday: "Wednesday", thursday: "Thursday", friday: "Friday", saturday: "Saturday", sunday: "Sunday"
             },
             de: {
                 txtBack: "Zrugg", txtHome: "Hoam", appTitle: "Mensa-Planer & Einkaafe",
                 homeWelcome: "Griaß di in deiner Kuchl", homeSubtitle: "Suach da aus, wosd heute machn mechtest: Essn plana, Zettl machn oder Vorräte oischaun.",
-                navPlanner: "Essensplaner", navPlannerSub: "Monatskalender & Statistiken",
+                navPlanner: "Essensplaner", navPlannerSub: "Linearer Kalender & Statistiken",
                 navShoppingLists: "Einkaufszettln", navShoppingListsSub: "Smart-Zettln & Schnelle Lischtn",
                 navWhatToCook: "Wos kann i kochen", navWhatToCookSub: "Vorratsschrank-Abgleich",
                 subTabSmart: "Smart-Zettln", subTabQuick: "Schnelle Lischt",
@@ -487,13 +486,19 @@
                 emptyQuickList: "Deine schnelle Lischt isch grad leer.", emptyPantryChecklist: "Koine Zutaten im Stamm-Katalog gfunne.",
                 noStats: "Koine geplanten Mahlzeiten im Kalender fir a Statistik gfunne.",
                 smartListLabel: "Smart-Zettl", itemsAggregated: "Zutaten ausm Kalender zammengetragen", addExtraItem: "Extra Soche dazutuan...", qtyPlaceholder: "Menge...",
-                rollUp: "▲ Zuamachn", rollOut: "▼ Aufmachn", chooseCatalogDefault: "-- Ausm Stamm-Katalog wähln --", chooseDefault: "-- Auswähln --"
+                rollUp: "▲ Zuamachn", rollOut: "▼ Aufmachn", chooseCatalogDefault: "-- Ausm Stamm-Katalog wähln --", chooseDefault: "-- Auswähln --",
+                monday: "Montag", tuesday: "Dienstag", wednesday: "Mittwoch", thursday: "Donnerstag", friday: "Freitag", saturday: "Samstag", sunday: "Sonntag"
             }
         };
 
         const monthNamesByLang = {
             en: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
             de: ["Jänner", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"]
+        };
+
+        const dayNamesByLang = {
+            en: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+            de: ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"]
         };
 
         function getData() { return appData[currentProfile]; }
@@ -520,7 +525,7 @@
                 homeBtn.classList.remove('hidden');
             }
 
-            if (viewId === 'meal-planner') renderMonthlyCalendar();
+            if (viewId === 'meal-planner') initLinearCalendar();
             if (viewId === 'master-catalog') renderMasterCatalog();
             if (viewId === 'shopping-lists') renderSmartLists();
             if (viewId === 'what-can-i-cook') renderPantryMatcher();
@@ -545,7 +550,7 @@
         function changeLanguage(lang) {
             currentLang = lang;
             updateTexts();
-            if (currentView === 'meal-planner') renderMonthlyCalendar();
+            if (currentView === 'meal-planner') initLinearCalendar();
             if (currentView === 'master-catalog') renderMasterCatalog();
             if (currentView === 'shopping-lists') { renderSmartLists(); renderQuickList(); }
             if (currentView === 'what-can-i-cook') renderPantryMatcher();
@@ -851,61 +856,98 @@
             renderMasterCatalog(document.getElementById('catalog-search').value);
         }
 
-        // Monthly Calendar & Smart List Generation
-        function renderMonthlyCalendar() {
+        // Linear Calendar & Infinite Scroll Operations
+        function initLinearCalendar() {
+            linearCalendarLoadedMonths = 2;
+            renderLinearCalendar();
+            
+            let container = document.getElementById('view-meal-planner');
+            window.onscroll = function() {
+                if (currentView === 'meal-planner') {
+                    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 200) {
+                        linearCalendarLoadedMonths++;
+                        renderLinearCalendar();
+                    }
+                }
+            };
+        }
+
+        function renderLinearCalendar() {
             const data = getData();
             const monthNames = monthNamesByLang[currentLang] || monthNamesByLang.en;
+            const dayNames = dayNamesByLang[currentLang] || dayNamesByLang.en;
+            
             document.getElementById('calendar-month-year').innerText = `${monthNames[currentCalendarMonth]} ${currentCalendarYear}`;
 
-            let grid = document.getElementById('monthly-calendar-grid');
-            grid.innerHTML = '';
+            let container = document.getElementById('linear-calendar-container');
+            container.innerHTML = '';
 
-            let firstDayIndex = new Date(currentCalendarYear, currentCalendarMonth, 1).getDay();
-            firstDayIndex = (firstDayIndex === 0) ? 6 : firstDayIndex - 1;
-            let totalDays = new Date(currentCalendarYear, currentCalendarMonth + 1, 0).getDate();
+            let tempYear = currentCalendarYear;
+            let tempMonth = currentCalendarMonth;
 
-            for (let i = 0; i < firstDayIndex; i++) {
-                let emptyDiv = document.createElement('div');
-                emptyDiv.className = 'h-28 bg-gray-50/50 rounded-xl border border-dashed border-gray-100';
-                grid.appendChild(emptyDiv);
-            }
+            for (let m = 0; m < linearCalendarLoadedMonths; m++) {
+                let totalDays = new Date(tempYear, tempMonth + 1, 0).getDate();
 
-            for (let day = 1; day <= totalDays; day++) {
-                let monthStr = String(currentCalendarMonth + 1).padStart(2, '0');
-                let dayStr = String(day).padStart(2, '0');
-                let dateKey = `${currentCalendarYear}-${monthStr}-${dayStr}`;
+                // Month header separator
+                let monthHeader = document.createElement('div');
+                monthHeader.className = 'sticky top-14 z-10 bg-emerald-700 text-white font-bold text-sm px-3 py-1.5 rounded-xl my-3 shadow-sm text-center';
+                monthHeader.innerText = `${monthNames[tempMonth]} ${tempYear}`;
+                container.appendChild(monthHeader);
 
-                let dayPlan = data.monthlyPlan[dateKey] || {};
-                let cell = document.createElement('div');
-                cell.className = 'h-28 p-1.5 rounded-xl border border-gray-200 bg-white flex flex-col justify-between hover:border-emerald-500 transition relative overflow-hidden cursor-pointer';
-                cell.setAttribute('onclick', `openDayPlannerModal('${dateKey}')`);
+                for (let day = 1; day <= totalDays; day++) {
+                    let monthStr = String(tempMonth + 1).padStart(2, '0');
+                    let dayStr = String(day).padStart(2, '0');
+                    let dateKey = `${tempYear}-${monthStr}-${dayStr}`;
 
-                let mealCount = Object.values(dayPlan).filter(v => v && v.name).length;
+                    let dateObj = new Date(tempYear, tempMonth, day);
+                    let dayOfWeekIndex = dateObj.getDay(); // 0 is Sunday, 1 is Monday...
+                    dayOfWeekIndex = (dayOfWeekIndex === 0) ? 6 : dayOfWeekIndex - 1; // Adjust to Mon=0 ... Sun=6
+                    let dayNameFull = dayNames[dayOfWeekIndex];
+                    let isWeekend = (dayOfWeekIndex >= 5);
 
-                let slotsHtml = '';
-                const slotIcons = { breakfast: '🍳', lunch: '🍲', dinner: '🍽️', snack: '🍎' };
-                ['breakfast', 'lunch', 'dinner', 'snack'].forEach(slot => {
-                    if (dayPlan[slot] && dayPlan[slot].name) {
-                        slotsHtml += `
-                            <div class="flex items-center justify-between group/item bg-emerald-50/60 hover:bg-emerald-100 rounded px-1 py-0.5 my-0.5 transition" title="${dayPlan[slot].name}">
-                                <span class="truncate text-[10px] text-gray-800 font-medium flex-grow">${slotIcons[slot]} ${dayPlan[slot].name}</span>
-                                <button onclick="deleteCalendarMealSlot(event, '${dateKey}', '${slot}')" class="text-red-500 hover:text-red-700 font-bold text-[10px] ml-1 px-1 rounded hover:bg-red-100 transition" title="Delete meal">✕</button>
+                    let dayPlan = data.monthlyPlan[dateKey] || {};
+                    let mealCount = Object.values(dayPlan).filter(v => v && v.name).length;
+
+                    let slotsHtml = '';
+                    const slotIcons = { breakfast: '🍳', lunch: '🍲', dinner: '🍽️', snack: '🍎' };
+                    ['breakfast', 'lunch', 'dinner', 'snack'].forEach(slot => {
+                        if (dayPlan[slot] && dayPlan[slot].name) {
+                            slotsHtml += `
+                                <div class="flex items-center justify-between bg-white/80 hover:bg-white rounded px-2 py-1 my-1 border border-gray-100 shadow-xs transition" title="${dayPlan[slot].name}">
+                                    <span class="truncate text-xs text-gray-800 font-medium flex-grow">${slotIcons[slot]} <strong class="capitalize">${slot}:</strong> ${dayPlan[slot].name}</span>
+                                    <button onclick="deleteCalendarMealSlot(event, '${dateKey}', '${slot}')" class="text-red-500 hover:text-red-700 font-bold text-xs ml-2 px-1.5 py-0.5 rounded hover:bg-red-50 transition" title="Delete meal">✕</button>
+                                </div>
+                            `;
+                        }
+                    });
+
+                    let row = document.createElement('div');
+                    // Pastel coloring for weekends (soft amber/rose or blue-gray pastel), clean lines for weekdays
+                    let bgStyle = isWeekend ? 'bg-amber-50/70 border-amber-200' : 'bg-white border-gray-200';
+                    row.className = `p-3 rounded-2xl border ${bgStyle} flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:border-emerald-500 transition cursor-pointer shadow-xs`;
+                    row.setAttribute('onclick', `openDayPlannerModal('${dateKey}')`);
+
+                    row.innerHTML = `
+                        <div class="flex items-center space-x-3 w-full sm:w-auto">
+                            <input type="checkbox" data-date="${dateKey}" onclick="event.stopPropagation()" class="day-select-checkbox w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer">
+                            <div class="flex items-baseline space-x-2">
+                                <span class="font-bold text-base text-gray-800">${day}.${tempMonth + 1}.</span>
+                                <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">${dayNameFull}</span>
                             </div>
-                        `;
-                    }
-                });
+                        </div>
+                        <div class="flex-grow w-full sm:w-auto">
+                            ${mealCount > 0 ? `<div class="space-y-1">${slotsHtml}</div>` : `<span class="text-xs text-gray-400 italic">Tap to add meal...</span>`}
+                        </div>
+                    `;
+                    container.appendChild(row);
+                }
 
-                cell.innerHTML = `
-                    <div class="flex justify-between items-center text-xs pb-1 border-b border-gray-50">
-                        <input type="checkbox" data-date="${dateKey}" onclick="event.stopPropagation()" class="day-select-checkbox rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer">
-                        <span class="font-bold text-gray-700">${day}</span>
-                        ${mealCount > 0 ? `<span class="bg-emerald-100 text-emerald-800 px-1 py-0.2 rounded text-[9px] font-bold">${mealCount}m</span>` : '<span class="w-3"></span>'}
-                    </div>
-                    <div class="space-y-0.5 text-[10px] text-gray-500 overflow-y-auto flex-grow pt-0.5 max-h-20">
-                        ${slotsHtml}
-                    </div>
-                `;
-                grid.appendChild(cell);
+                // Advance to next month for infinite scroll loop
+                tempMonth++;
+                if (tempMonth > 11) {
+                    tempMonth = 0;
+                    tempYear++;
+                }
             }
         }
 
@@ -915,7 +957,7 @@
             const data = getData();
             if (data.monthlyPlan[dateKey] && data.monthlyPlan[dateKey][slotKey]) {
                 delete data.monthlyPlan[dateKey][slotKey];
-                renderMonthlyCalendar();
+                renderLinearCalendar();
             }
         }
 
@@ -928,7 +970,7 @@
                 currentCalendarMonth = 11;
                 currentCalendarYear--;
             }
-            renderMonthlyCalendar();
+            initLinearCalendar();
         }
 
         function combineQuantities(qty1, qty2) {
@@ -1161,7 +1203,7 @@
             }
 
             closeDayPlannerModal();
-            renderMonthlyCalendar();
+            renderLinearCalendar();
         }
 
         // Subtabs: Shopping Lists (Smart vs Quick)
